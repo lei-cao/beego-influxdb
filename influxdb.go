@@ -25,6 +25,7 @@ type BeegoInfluxDb struct {
 var defaultDb = "default"
 var slowQueryDb = "slow_query"
 
+var defaultQueriesRegister = metrics.NewRegistry()
 var slowQueriesRegister = metrics.NewRegistry()
 
 var dbs = map[string]string{"default": "default", "slow_query": "slow_query"}
@@ -81,7 +82,7 @@ func (this *BeegoInfluxDb) ReportMetricsToNewrelic(ctx *context.Context) {
 }
 
 func (this *BeegoInfluxDb) SendToInfluxDb() {
-	go Influxdb(metrics.DefaultRegistry, this.SendingInterval, this.GetClientConfig(dbs[defaultDb]))
+	go Influxdb(defaultQueriesRegister, this.SendingInterval, this.GetClientConfig(dbs[defaultDb]))
 	go Influxdb(slowQueriesRegister, this.SendingInterval, this.GetClientConfig(dbs[slowQueryDb]))
 }
 
