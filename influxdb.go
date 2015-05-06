@@ -44,8 +44,8 @@ func (this *BeegoInfluxDb) InitBeegoInfluxDb() {
 		this.Client.CreateDatabase(v)
 	}
 
-	beego.InsertFilter("*", beego.BeforeRouter, InitNewRelicTimer)
-	beego.InsertFilter("*", beego.FinishRouter, this.ReportMetricsToNewrelic)
+	beego.InsertFilter("*", beego.BeforeRouter, InitInfluxDbTimer, false)
+	beego.InsertFilter("*", beego.FinishRouter, this.ReportMetricsToInfluxDb, false)
 
 	this.SendToInfluxDb()
 }
@@ -63,11 +63,11 @@ func (this *BeegoInfluxDb) GetClientConfig(db string) *client.ClientConfig {
 	return c
 }
 
-func InitNewRelicTimer(ctx *context.Context) {
+func InitInfluxDbTimer(ctx *context.Context) {
 	startTime := time.Now()
 	ctx.Input.SetData("influxdb_timer", startTime)
 }
-func (this *BeegoInfluxDb) ReportMetricsToNewrelic(ctx *context.Context) {
+func (this *BeegoInfluxDb) ReportMetricsToInfluxDb(ctx *context.Context) {
 	startTimeInterface := ctx.Input.GetData("influxdb_timer")
 	if startTime, ok := startTimeInterface.(time.Time); ok {
 		url := ctx.Request.URL.String()
@@ -76,7 +76,7 @@ func (this *BeegoInfluxDb) ReportMetricsToNewrelic(ctx *context.Context) {
 			st := slowQueriesRegister.GetOrRegister("timer"+url, func() metrics.Timer { return metrics.NewTimer() }).(metrics.Timer)
 			st.UpdateSince(startTime)
 		}
-		t := metrics.GetOrRegister("timer"+path, func() metrics.Timer { return metrics.NewTimer() }).(metrics.Timer)
+		t := defaultQueriesRegister.GetOrRegister("timer"+path, func() metrics.Timer { return metrics.NewTimer() }).(metrics.Timer)
 		t.UpdateSince(startTime)
 	}
 }
